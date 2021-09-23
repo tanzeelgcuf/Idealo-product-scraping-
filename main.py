@@ -1,194 +1,138 @@
+import bs4
+import requests 
+from bs4 import BeautifulSoup
+
+from openpyxl import load_workbook
 import xlrd
-from t import *
-from flask import *
-from table_create import *
-from backup import *
-import sys
+import xlsxwriter   
+from xlwt import Workbook 
+import xlwt 
+
+
+wb = Workbook()
+sheet1 = wb.add_sheet('Sheet 1')
+
+sheet1.write(0, 0, 'title')
+sheet1.write(0, 1, 'price')
+sheet1.write(0, 2, 'src')
+sheet1.write(0, 3, 'href')
 
 
 
-app = Flask(__name__)
-
-@app.route('/')
-def main():
-    return render_template("index.html")
-
-@app.route('/goOn')
-def sel():
-    f=open('templates/table.html','w',encoding="utf-8")
-    f.write(backup)
-    f.close()
-    return render_template("table.html")
-
-
-
-@app.after_request
-def add_header(response):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also to cache the rendered page for 10 minutes.
-    """
-    response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
-    response.headers['Cache-Control'] = 'public, max-age=0'
-    return response
-
-@app.route('/search', methods=['GET', 'POST'])
-def results():
-    query=''
-    if request.method == "POST":
-        book = request.form['book']
-        query=str(book).upper()
-        if query=='':
-            return render_template('index.html')
+def function(id):
+    HEADERS = ({'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)  AppleWebKit/537.36 (KHTML, like Gecko)  Chrome/44.0.2403.157 Safari/537.36',
+              'Accept-Language': 'en-US, en;q=0.5',
+                    'dnt': '1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-user': '?1',
+        'sec-fetch-dest': 'document',
+        'referer': 'https://www.bauhof.ee/et/tooriistad',
+                 
+        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+        'authority': 'https://www.bauhof.ee/et/tooriistad',
+        'pragma': 'no-cache',
+        'cache-control': 'no-cache',
+        'dnt': '1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (X11; CrOS x86_64 8172.45.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.64 Safari/537.36',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'sec-fetch-site': 'none',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'document',
+        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+                 })
     
-    bauf_title=[]
-    bauf_price=[]
-    bauf_href=[]
-    bauf_src=[]
-
-    amz_title=[]
-    amz_price=[]
-    amz_href=[]
-    amz_src=[]
-
-    start="""<html>
-<head>
-<meta charset="UTF-8">
-<title>App</title>
-</head>
-    <body>
-    <form class="example" method="post" action="/search" 
-             style="margin:auto;max-width:600px">
-                <input type="text" placeholder="Search item" name="book">
-                <button type="submit"><i class="fa fa-search">Search</i>
-                </button>
-                            
-            </form>
-    <div class='alpha'>
-    <h2>Search results for  <span><i style='background-color:pink'>"""+query+"""</i></h2>
-    </div>
-
-    <div style='background-color:#55DC4A'>
-    <h2 style='margin-left:10%'><p style='background-color:yellow;width:20%'>From Bauhof results</p></h2>
-    <table style='margin-left:12%;margin-top:1%'>
-    <tr>"""
+    link = 'https://www.amazon.de/s?k=PIPING+TOOLS&page='+str(id)+'&language=en'
+    r = requests.get(link,headers=HEADERS)
+    link = BeautifulSoup(r.content, 'html.parser')
+    return link
 
 
-           
-    f = open("templates/results.html", "w",encoding="utf-8")
-    f.write(start)
+k=1        
+for i in range(1,15):
+    link=function(i)
+     #Garden tools
+    soup = link.find('div',{'class','s-main-slot s-result-list s-search-results sg-row'}).find_all('div')
 
-    #Loop
-    aW1=["Piping Tools","Tool Accessories","Tool Boxes","Compressed Air Tools",'Ladders Scaffolding','Measuring instruments','Hand tools','electric tools','garden tools']
-    bW1=["COMPRESSED AIR TOOLS_","electric tools_","garden tools_",'Hand tools_',"ladders-scaffolding_","MEASURING Instruments_","PIPING TOOLS_","TOOL ACCESSORIES_",'TOOL BOXES_']
-    for kkk in range(len(aW1)):
-        AMZZ="amazon_de/"+aW1[kkk]+'.xls'
-        BAUF="bauof_data/"+str(bW1[kkk])+".xls"
-        bigCrunch(AMZZ,BAUF,query,bauf_title,bauf_price,bauf_href,bauf_src,amz_title,amz_price,amz_src,amz_href)
+    z1=''
+    z2=''
 
-
-    createDiv1(f,bauf_title,bauf_price,bauf_href,bauf_src,amz_title,amz_price,amz_src,amz_href)
-    createDiv2(f,bauf_title,bauf_price,bauf_href,bauf_src,amz_title,amz_price,amz_src,amz_href) 
-
-    final="""</div>
-    </body>
-    <style>
-    body{
-    background-color:#FF6833;
-    }
-    .alpha{
-    color:black;
-    background-color:white;
-    width:300px;
-    height:40px;
-    }
-    td{
-    padding:10
-    }
-    a:link {
-      color: red;
-    }
-
-    /* visited link */
-    a:visited {
-      color: green;
-    }
-
-    /* mouse over link */
-    a:hover {
-      color: hotpink;
-    }
-
-    /* selected link */
-    a:active {
-      color: blue;
-    }
-    form.example input[type=text] {
-      padding: 10px;
-      font-size: 17px;
-      border: 1px solid grey;
-      float: left;
-      width: 80%;
-      background: #f1f1f1;
-    }
-    form.example button {
-      float: left;
-      width: 20%;
-      padding: 10px;
-      background: #2196F3;
-      color: white;
-      font-size: 17px;
-      border: 1px solid grey;
-      border-left: none;
-      cursor: pointer;
-    }
-    form.example button:hover {
-      background: #0b7dda;
-    }
-    form.example::after {
-      content: "";
-      clear: both;
-      display: table;
-    }
-    </style> </body>
-	
-	</html>"""
-
-    f.write(final)
-    f.close()
-    return render_template("results.html")
-
-
-@app.route('/close', methods=['GET', 'POST'])
-def table():
-    query=''
-    if request.method == "POST":
-        book = request.form['clip']
-        query=str(book).upper()
-        if query=='':
-            return render_template("table.html")
+    for i in soup:
+        try:
+            z=i.find('span',{'class','a-size-base-plus a-color-base a-text-normal'}).text
+            #a-size-medium a-color-base a-text-normal
+            #a-size-base-plus a-color-base a-text-normal
+            zz=i.find('span',{'class','a-offscreen'}).text
+        except:
+            zz='p'
+            z='p'
+        if zz=='p' or z=='p':
+            continue
+        if z1!=z and z2!=zz:
+            z1=z
+            z2=zz
+        else:
+            continue
+        hre=i.find('a',{'class','a-link-normal a-text-normal'})['href']
         
-    bauf_title=[]
-    bauf_price=[]
-    bauf_href=[]
-    bauf_src=[]
+        
+        href='amazon.de'+hre
+        title=z1+"\n"
+        src=i.img['src']
+        price=zz
+       
+        
 
-    amz_title=[]
-    amz_price=[]
-    amz_href=[]
-    amz_src=[]
-
-    aW1=["Piping Tools","Tool Accessories","Tool Boxes","Compressed Air Tools",'Ladders Scaffolding','Measuring instruments','Hand tools','electric tools','garden tools']
-    bW1=["COMPRESSED AIR TOOLS_","electric tools_","garden tools_",'Hand tools_',"ladders-scaffolding_","MEASURING Instruments_","PIPING TOOLS_","TOOL ACCESSORIES_",'TOOL BOXES_']
-    for kkk in range(len(aW1)):
-        AMZZ="amazon_de/"+aW1[kkk]+'.xls'
-        BAUF="bauof_data/"+str(bW1[kkk])+".xls"
-        bigCrunch(AMZZ,BAUF,query,bauf_title,bauf_price,bauf_href,bauf_src,amz_title,amz_price,amz_src,amz_href)
+        sheet1.write(k, 0, title)
+        sheet1.write(k, 1, price)
+        sheet1.write(k, 2, src)
+        sheet1.write(k, 3, href)
+      
+        k+=1
+        
+wb.save('amazon_de/Piping Tools.xls')
     
-    createtable(bauf_title,bauf_price,amz_title,amz_price)
-    return render_template('table.html')
 
-if __name__ == "__main__":
-    app.run(debug=True, use_debugger=False, use_reloader=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    k=1
+    for i in soup:
+        href=i.a['href']
+        title=i.find('a',{'class','product-item-link'}).text.strip()
+        price=i.find('span',{'class','price'}).text
+        src=i.img['src']
+"""
+
 
 
